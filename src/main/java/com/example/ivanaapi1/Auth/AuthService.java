@@ -5,6 +5,10 @@ import com.example.ivanaapi1.User.User;
 import com.example.ivanaapi1.User.UserRepository;
 import com.example.ivanaapi1.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,15 +16,22 @@ import org.springframework.stereotype.Service;
 public class AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
     public AuthResponse login(LoginRequest loginRequest) {
-        return null;
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+        UserDetails userDetails = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow();
+        String token = jwtService.getToken(userDetails);
+        return AuthResponse.builder()
+                .token(token)
+                .build();
     }
 
     public AuthResponse register(RegisterRequest registerRequest) {
         User user = User.builder()
                 .username(registerRequest.getUsername())
-                .password(registerRequest.getPassword())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .firstName(registerRequest.getFirstName())
                 .lastName(registerRequest.getLastName())
                 .country(registerRequest.getCountry())
